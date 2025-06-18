@@ -1,0 +1,30 @@
+# Dockerfile.dev - для тестового окружения
+FROM python:3.11-alpine
+
+WORKDIR /app
+
+# Установка системных зависимостей
+RUN apk add --no-cache \
+    python3-dev \
+    gcc \
+    musl-dev \
+    libffi-dev \
+    postgresql-dev \
+    && pip install --upgrade pip
+
+# Копирование зависимостей отдельно для кэширования
+COPY pyproject.toml poetry.lock* ./
+
+# Установка зависимостей (включая тестовые)
+RUN pip install --no-cache-dir -e .[test,dev]
+
+# Копирование всего кода
+COPY . .
+
+# Настройка окружения для тестов
+ENV PYTHONUNBUFFERED=1
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV DATABASE_URL="postgresql://kubsu:kubsu@localhost:5432/kubsu"
+
+# Команда для запуска тестов
+CMD ["pytest", "-v", "tests/"]
