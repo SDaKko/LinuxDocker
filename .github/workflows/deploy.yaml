@@ -58,27 +58,18 @@ jobs:
         key: ${{ secrets.SSH_PRIVATE_KEY }}
         port: ${{ secrets.SSH_PORT }}
         script: |
-          # Login to Docker Hub
-          podman login -u ${{ secrets.DOCKER_HUB_USERNAME_NEW }} -p ${{ secrets.DOCKER_HUB_TOKEN }} docker.io
+            podman login -u ${{ vars.DOCKER_HUB_USERNAME }} -p ${{ secrets.DOCKER_HUB_TOKEN }} docker.io
 
-          # Stop and remove existing container if it exists
-          podman stop kubsu-app || true
-          podman rm kubsu-app || true
+            # Stop and remove existing container if it exists
+            podman stop kubsu-app || true
+            podman rm kubsu-app || true
 
-          # Optional: Remove existing image to force clean pull
-          podman rmi ${{ secrets.DOCKER_HUB_USERNAME_NEW }}/kubsu-app:latest || true
+            # Remove existing image if it exists
+            podman rmi ${{ vars.DOCKER_HUB_USERNAM_NEW }}/kubsu-app:latest || true
 
-          # Pull new image from Docker Hub
-          podman pull ${{ secrets.DOCKER_HUB_USERNAME_NEW }}/kubsu-app:latest
+            # Pull new image from Docker Hub
+            podman pull ${{ vars.DOCKER_HUB_USERNAM_NEW }}/kubsu-app:latest
 
-          # Run new container with:
-          # - Network host (как в примере, для доступа к localhost PostgreSQL)
-          podman run -d \
-            --name kubsu-app \
-            --network host \
-            -e DATABASE_URL=postgresql+psycopg://kubsu:kubsu@127.0.0.1:5432/kubsu \
-            ${{ secrets.DOCKER_HUB_USERNAME_NEW }}/kubsu-app:latest
-
-          # Verify deployment
-          echo "Container kubsu-app успешно развернут!"
-          podman ps --filter "name=kubsu-app" --format "table {{.ID}}\t{{.Names}}\t{{.Status}}"
+            # Run new container
+            podman run -d --name pythod-crud --network host ${{ vars.DOCKER_HUB_USERNAME_NEW }}/kubsu-app:latest
+            echo "Container has been deployed successfully!"
