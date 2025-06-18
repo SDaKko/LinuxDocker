@@ -51,18 +51,34 @@ jobs:
         tags: ${{ secrets.DOCKER_HUB_USERNAME_NEW }}/kubsu-app:latest
 
     - name: Deploy to server
-      uses: appleboy/ssh-action@v0.1.10
+      uses: appleboy/ssh-action@v1
       with:
         host: ${{ secrets.SSH_HOST }}
         username: ${{ secrets.SSH_USERNAME }}
         key: ${{ secrets.SSH_PRIVATE_KEY }}
         port: ${{ secrets.SSH_PORT }}
         script: |
-          docker pull ${{ secrets.DOCKER_HUB_USERNAME_NEW }}/kubsu-app:latest
-          docker stop kubsu-app || true
-          docker rm kubsu-app || true
-          docker run -d \
+          # Login to Docker Hub
+          podman login -u ${{ secrets.DOCKER_HUB_USERNAME_NEW }} -p ${{ secrets.DOCKER_HUB_TOKEN }} docker.io
+
+          # Stop and remove existing container if it exists
+          podman stop kubsu-app || true
+          podman rm kubsu-app || true
+
+          # Optional: Remove existing image to force clean pull
+          podman rmi ${{ secrets.DOCKER_HUB_USERNAME_NEW }}/kubsu-app:latest || true
+
+          # Pull new image from Docker Hub
+          podman pull ${{ secrets.DOCKER_HUB_USERNAME_NEW }}/kubsu-app:latest
+
+          # Run new container with:
+          # - Network host (как в примере, для доступа к localhost PostgreSQL)
+          podman run -d \
             --name kubsu-app \
-            -p 8041:8041 \
+            --network host \
             -e DATABASE_URL=postgresql+psycopg://kubsu:kubsu@127.0.0.1:5432/kubsu \
             ${{ secrets.DOCKER_HUB_USERNAME_NEW }}/kubsu-app:latest
+
+          # Verify deployment
+          echo "Container kubsu-app успешно развернут!"
+          podman ps --filter "name=kubsu-app" --format "table {{.ID}}\t{{.Names}}\t{{.Status}}"
