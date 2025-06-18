@@ -2,7 +2,7 @@ name: Deploy
 
 on:
   push:
-    branches: [ "master" ]
+    branches: ["master"]
 
 jobs:
   test:
@@ -10,8 +10,7 @@ jobs:
     services:
       postgres:
         image: postgres:15-alpine
-        ports:
-          - "5432:5432"
+        ports: ["5432:5432"]
         env:
           POSTGRES_DB: kubsu
           POSTGRES_USER: kubsu
@@ -25,13 +24,11 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-        with:
-          ref: dev
 
       - name: Setup Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Build container
+      - name: Build test container
         uses: docker/build-push-action@v3
         with:
           context: .
@@ -41,18 +38,18 @@ jobs:
 
       - name: Run tests
         run: |
-          docker run --rm --network=host ${{ vars.DOCKERHUB_USERNAME }}/python-crud-dev:latest
-
+          docker run --rm --network=host \
+            -e DATABASE_URL="postgresql://kubsu:kubsu@localhost:5432/kubsu" \
+            ${{ vars.DOCKERHUB_USERNAME }}/python-crud-dev:latest \
+            pytest -v tests/
 
   deploy:
     needs: test
     runs-on: self-hosted
 
     steps:
-      - name: Checkout master branch
+      - name: Checkout code
         uses: actions/checkout@v4
-        with:
-          ref: master
 
       - name: Setup Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -63,15 +60,15 @@ jobs:
           username: ${{ vars.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Build and push
+      - name: Build and push production image
         uses: docker/build-push-action@v3
         with:
           context: .
           file: ./Dockerfile.prod
           push: true
-          tags: ${{ vars.DOCKERHUB_USERNAME }}/pythod-crud:latest
+          tags: ${{ vars.DOCKERHUB_USERNAME }}/python-crud:latest
 
-      - name: Deploy to on server
+      - name: Deploy to production
         uses: appleboy/ssh-action@v1
         with:
           host: ${{ secrets.SSH_HOST }}
@@ -81,16 +78,19 @@ jobs:
           script: |
             podman login -u ${{ vars.DOCKERHUB_USERNAME }} -p ${{ secrets.DOCKERHUB_TOKEN }} docker.io
 
-            # Stop and remove existing container if it exists
-            podman stop pythod-crud || true
-            podman rm pythod-crud || true
+            # Stop and remove existing container
+            podman stop python-crud || true
+            podman rm python-crud || true
 
-            # Remove existing image if it exists
-            podman rmi ${{ vars.DOCKERHUB_USERNAME }}/pythod-crud:latest || true
+            # Remove existing image
+            podman rmi ${{ vars.DOCKERHUB_USERNAME }}/python-crud:latest || true
 
-            # Pull new image from Docker Hub
-            podman pull ${{ vars.DOCKERHUB_USERNAME }}/pythod-crud:latest
+            # Pull new image
+            podman pull ${{ vars.DOCKERHUB_USERNAME }}/python-crud:latest
 
             # Run new container
-            podman run -d --name pythod-crud --network host ${{ vars.DOCKERHUB_USERNAME }}/pythod-crud:latest
-            echo "Container has been deployed successfully!"
+            podman run -d \
+              --name python-crud \
+              --network host \
+              ${{ vars.DOCKERHUB_USERNAME }}/python-crud:latest
+            echo "Container deployed successfully"
