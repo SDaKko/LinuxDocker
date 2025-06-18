@@ -33,7 +33,7 @@ jobs:
 
   deploy:
     needs: test
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     steps:
     - uses: actions/checkout@v3
 
@@ -49,44 +49,10 @@ jobs:
         context: .
         push: true
         tags: ${{ secrets.DOCKER_HUB_USERNAME_NEW }}/kubsu-app:latest
-    - name: Debug SSH connection
-      run: |
-        echo "Публичная часть ключа:"
-        echo "${{ secrets.SSH_PRIVATE_KEY }}" | ssh-keygen -y -f /dev/stdin || echo "Неверный формат ключа"
-
-        echo "Проверка доступа:"
-        curl -sSf telnet://${{ secrets.SSH_HOST }}:${{ secrets.SSH_PORT }} -m 5 || \
-        echo "Порт недоступен"
-    - name: Test SSH connection manually
-      run: |
-        echo "${{ secrets.SSH_PRIVATE_KEY }}" > key.pem
-        chmod 600 key.pem
-        ssh -i key.pem \
-          -p ${{ secrets.SSH_PORT || 22 }} \
-          -o StrictHostKeyChecking=no \
-          ${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }} \
-          "echo 'Connected to:'; hostname; echo 'Podman version:'; podman --version"
 
     - name: Deploy to server
-      uses: appleboy/ssh-action@v1
-      with:
-        host: ${{ secrets.SSH_HOST }}
-        username: ${{ secrets.SSH_USERNAME }}
-        key: ${{ secrets.SSH_PRIVATE_KEY }}
-        port: ${{ secrets.SSH_PORT }}
-        script: |
-            podman login -u ${{ vars.DOCKER_HUB_USERNAME }} -p ${{ secrets.DOCKER_HUB_TOKEN }} docker.io
-
-            # Stop and remove existing container if it exists
-            podman stop kubsu-app || true
-            podman rm kubsu-app || true
-
-            # Remove existing image if it exists
-            podman rmi ${{ vars.DOCKER_HUB_USERNAME_NEW }}/kubsu-app:latest || true
-
-            # Pull new image from Docker Hub
-            podman pull ${{ vars.DOCKER_HUB_USERNAME_NEW }}/kubsu-app:latest
-
-            # Run new container
-            podman run -d --name kubsu-app --network host ${{ vars.DOCKER_HUB_USERNAME_NEW }}/kubsu-app:latest
-            echo "Container has been deployed successfully!"
+      run: |
+         podman stop kubsu-app || true
+         podman rm kubsu-app || true
+         podman run -d --name kubsu-app --network host ${{ secrets.DOCKER_HUB_USERNAME_NEW }}/kubsu-app:latest
+         echo "Container has been deployed successfully!"
