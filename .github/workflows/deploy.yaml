@@ -57,6 +57,15 @@ jobs:
         echo "Проверка доступа:"
         curl -sSf telnet://${{ secrets.SSH_HOST }}:${{ secrets.SSH_PORT }} -m 5 || \
         echo "Порт недоступен"
+    - name: Test SSH connection manually
+      run: |
+        echo "${{ secrets.SSH_PRIVATE_KEY }}" > key.pem
+        chmod 600 key.pem
+        ssh -i key.pem \
+          -p ${{ secrets.SSH_PORT || 22 }} \
+          -o StrictHostKeyChecking=no \
+          ${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }} \
+          "echo 'Connected to:'; hostname; echo 'Podman version:'; podman --version"
 
     - name: Deploy to server
       uses: appleboy/ssh-action@v1
