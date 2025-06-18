@@ -65,11 +65,11 @@ jobs:
             podman rm kubsu-app || true
 
             # Remove existing image if it exists
-            podman rmi ${{ vars.DOCKER_HUB_USERNAM_NEW }}/kubsu-app:latest || true
+            podman rmi ${{ vars.DOCKER_HUB_USERNAME_NEW }}/kubsu-app:latest || true
 
             # Pull new image from Docker Hub
-            podman pull ${{ vars.DOCKER_HUB_USERNAM_NEW }}/kubsu-app:latest
+            podman pull ${{ vars.DOCKER_HUB_USERNAME_NEW }}/kubsu-app:latest
 
             # Run new container
-            podman run -d --name pythod-crud --network host ${{ vars.DOCKER_HUB_USERNAME_NEW }}/kubsu-app:latest
+            podman run -d --name kubsu-app --network host ${{ vars.DOCKER_HUB_USERNAME_NEW }}/kubsu-app:latest
             echo "Container has been deployed successfully!"
