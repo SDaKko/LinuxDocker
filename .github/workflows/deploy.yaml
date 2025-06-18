@@ -49,6 +49,14 @@ jobs:
         context: .
         push: true
         tags: ${{ secrets.DOCKER_HUB_USERNAME_NEW }}/kubsu-app:latest
+    - name: Debug SSH connection
+      run: |
+        echo "Публичная часть ключа:"
+        echo "${{ secrets.SSH_PRIVATE_KEY }}" | ssh-keygen -y -f /dev/stdin || echo "Неверный формат ключа"
+
+        echo "Проверка доступа:"
+        curl -sSf telnet://${{ secrets.SSH_HOST }}:${{ secrets.SSH_PORT }} -m 5 || \
+        echo "Порт недоступен"
 
     - name: Deploy to server
       uses: appleboy/ssh-action@v1
