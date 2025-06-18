@@ -48,7 +48,7 @@ jobs:
       with:
         context: .
         push: true
-        tags: ${{ secrets.DOCKER_HUB_USERNAME }}/kubsu-app:latest
+        tags: ${{ secrets.DOCKER_HUB_USERNAME_NEW }}/kubsu-app:latest
 
     - name: Deploy to server
       uses: appleboy/ssh-action@v0.1.10
@@ -58,11 +58,11 @@ jobs:
         key: ${{ secrets.SSH_PRIVATE_KEY }}
         port: 22
         script: |
-          docker pull ${{ secrets.DOCKER_HUB_USERNAME }}/kubsu-app:latest
+          docker pull ${{ secrets.DOCKER_HUB_USERNAME_NEW }}/kubsu-app:latest
           docker stop kubsu-app || true
           docker rm kubsu-app || true
           docker run -d \
             --name kubsu-app \
             -p 8041:8041 \
             -e DATABASE_URL=postgresql+psycopg://kubsu:kubsu@127.0.0.1:5432/kubsu \
-            ${{ secrets.DOCKER_HUB_USERNAME }}/kubsu-app:latest
+            ${{ secrets.DOCKER_HUB_USERNAME_NEW }}/kubsu-app:latest
