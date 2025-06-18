@@ -56,7 +56,7 @@ jobs:
         host: 212.192.134.135
         username: ${{ secrets.SSH_USERNAME }}
         key: ${{ secrets.SSH_PRIVATE_KEY }}
-        port: 22
+        port: 58529
         script: |
           docker pull ${{ secrets.DOCKER_HUB_USERNAME_NEW }}/kubsu-app:latest
           docker stop kubsu-app || true
