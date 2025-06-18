@@ -53,10 +53,10 @@ jobs:
     - name: Deploy to server
       uses: appleboy/ssh-action@v0.1.10
       with:
-        host: 212.192.134.135
+        host: ${{ secrets.SSH_HOST }}
         username: ${{ secrets.SSH_USERNAME }}
         key: ${{ secrets.SSH_PRIVATE_KEY }}
-        port: 58529
+        port: ${{ secrets.SSH_PORT }}
         script: |
           docker pull ${{ secrets.DOCKER_HUB_USERNAME_NEW }}/kubsu-app:latest
           docker stop kubsu-app || true
